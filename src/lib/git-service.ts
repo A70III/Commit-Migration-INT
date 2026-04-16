@@ -1,5 +1,5 @@
-import simpleGit, { SimpleGit, DefaultLogFields, ListLogLine } from 'simple-git';
-import { spawn } from 'child_process';
+import simpleGit, { SimpleGit } from 'simple-git';
+import { spawn, spawnSync } from 'child_process';
 
 export class GitService {
   private git: SimpleGit;
@@ -26,24 +26,99 @@ export class GitService {
     };
   }
 
-  async getLog(branch: string, maxCount = 100): Promise<ReadonlyArray<DefaultLogFields & ListLogLine>> {
+  async getLog(branch: string, options: { 
+    maxCount?: number, 
+    skip?: number, 
+    search?: string, 
+    showAll?: boolean 
+  } = {}): Promise<any[]> {
+    const { maxCount = 50, skip = 0, search, showAll = false } = options;
+    
     try {
-      const logSummary = await this.git.log({
-        format: {
-          hash: '%H',
-          date: '%ai',
-          message: '%s',
-          refs: '%D',
-          body: '%b',
-          author_name: '%aN',
-          author_email: '%aE'
-        },
-        maxCount,
-      });
-      return logSummary.all;
+      // Use \x1F (unit separator) between fields, \x02 (STX) to wrap each commit record
+      // This avoids multiline body issues and escaping headaches
+      const FIELD_SEP = '\x1F';  // unit separator
+      const RECORD_SEP = '\x02'; // STX
+      
+      // Build git args array - we use execSync for reliable special char handling
+      const gitArgs = [
+        '-C', this.projectPath,
+        'log',
+        `--format=${RECORD_SEP}%H${FIELD_SEP}%ai${FIELD_SEP}%s${FIELD_SEP}%D${FIELD_SEP}%aN${FIELD_SEP}%aE${FIELD_SEP}%P${FIELD_SEP}%ar${RECORD_SEP}`,
+        `--max-count=${maxCount}`,
+        `--skip=${skip}`,
+      ];
+
+      if (showAll) {
+        gitArgs.push('--all');
+      } else {
+        gitArgs.push(branch);
+      }
+
+      if (search) {
+        gitArgs.push(`--grep=${search}`, '--regexp-ignore-case');
+      }
+
+      const spawnResult = spawnSync('git', gitArgs, { encoding: 'utf8', cwd: this.projectPath });
+      if (spawnResult.status !== 0) {
+        console.error('git log stderr:', spawnResult.stderr);
+        return [];
+      }
+      const raw = spawnResult.stdout;
+
+      const seen = new Set<string>();
+      const commits = raw
+        .split(RECORD_SEP)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(block => {
+          const fields = block.split(FIELD_SEP);
+          const [hash, date, message, refs, author_name, author_email, parents, relativeDate] = fields;
+          return {
+            hash: (hash || '').trim(),
+            date: (date || '').trim(),
+            message: (message || '').trim(),
+            refs: (refs || '').trim(),
+            body: '',
+            author_name: (author_name || '').trim(),
+            author_email: (author_email || '').trim(),
+            parents: (parents || '').trim(),
+            relativeDate: (relativeDate || '').trim(),
+          };
+        })
+        .filter(c => {
+          if (!/^[0-9a-f]{40}$/.test(c.hash)) return false;
+          if (seen.has(c.hash)) return false;
+          seen.add(c.hash);
+          return true;
+        });
+
+      return commits;
     } catch (e) {
       console.error(`Failed to get log for ${branch}`, e);
       return [];
+    }
+  }
+
+  async getCommitDetails(hash: string): Promise<{ files: { status: string, path: string }[] }> {
+    try {
+      const raw = await this.git.raw(['show', '--name-status', '--pretty=format:', hash]);
+      const lines = raw.split('\n').filter(l => l.trim() !== '');
+      
+      const files = lines
+        .filter(line => /^[A-Z]\t/.test(line) || /^[A-Z]\s/.test(line))
+        .map(line => {
+          const parts = line.split(/\s+/);
+          return {
+            status: parts[0],
+            path: parts.slice(1).join(' ')
+          };
+        });
+
+      return { files };
+    } catch (e) {
+      console.error(`Failed to get details for commit ${hash}`, e);
+      return { files: [] };
     }
   }
 

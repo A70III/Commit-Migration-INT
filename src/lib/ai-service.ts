@@ -11,13 +11,24 @@ export interface GeneratePRParams {
 
 const defaultTemplate = `
 You are an expert developer. Analyze the following git diff and write a pull request description.
-Output should be strictly in Markdown format without conversational greetings.
-Follow this format:
-# {{Title}}
-## What changed?
-- Detailed bullet points of modifications...
-## Why?
-- The purpose or value of the changes.
+The output MUST be written primarily in Thai, but you can mix in English for technical terms or system names where necessary.
+Keep the output strictly in Markdown format WITHOUT any conversational greetings or conversational closings.
+
+Please strictly follow this output structure:
+
+# [Title summarizing the changes in Thai]
+
+## รายละเอียดการ Pull Request
+
+[Write a short paragraph summarizing the purpose of the changes in Thai]
+
+**สรุปสิ่งที่แก้ไข/เพิ่มเข้ามา:**
+
+1. **[Category or Component Name e.g. เอกสารโปรเจกต์ (Documentation)]**
+   - [Detailed bullet points of modifications in Thai]
+   - [Detailed bullet points of modifications in Thai]
+2. **[Another Category e.g. ระบบ Automation]**
+   - [Detailed bullet points of modifications in Thai]
 
 ---
 Diff Content:
@@ -25,7 +36,9 @@ Diff Content:
 `;
 
 export async function generatePRContent(params: GeneratePRParams): Promise<string> {
-  const { provider, apiKey, diffContent } = params;
+  const provider = params.provider;
+  const apiKey = (params.apiKey || '').trim();
+  const diffContent = params.diffContent;
   
   const template = params.template || defaultTemplate;
   const prompt = template.replace('{{diff}}', diffContent);
