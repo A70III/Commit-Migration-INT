@@ -32,7 +32,7 @@ export class GitService {
     search?: string, 
     showAll?: boolean 
   } = {}): Promise<any[]> {
-    const { maxCount = 50, skip = 0, search, showAll = false } = options;
+    const { maxCount, skip, search, showAll = false } = options;
     
     try {
       // Use \x1F (unit separator) between fields, \x02 (STX) to wrap each commit record
@@ -45,9 +45,10 @@ export class GitService {
         '-C', this.projectPath,
         'log',
         `--format=${RECORD_SEP}%H${FIELD_SEP}%ai${FIELD_SEP}%s${FIELD_SEP}%D${FIELD_SEP}%aN${FIELD_SEP}%aE${FIELD_SEP}%P${FIELD_SEP}%ar${RECORD_SEP}`,
-        `--max-count=${maxCount}`,
-        `--skip=${skip}`,
       ];
+
+      if (maxCount) gitArgs.push(`--max-count=${maxCount}`);
+      if (skip) gitArgs.push(`--skip=${skip}`);
 
       if (showAll) {
         gitArgs.push('--all');

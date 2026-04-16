@@ -27,7 +27,6 @@ interface GitGraphViewerProps {
   onSearch: (query: string) => void;
   onToggleAll: (showAll: boolean) => void;
   showAll: boolean;
-  onLoadMore: () => void;
   isLoading?: boolean;
 }
 
@@ -52,7 +51,7 @@ function getColor(idx: number) {
 export default function GitGraphViewer({
   commits, selectedCommit, onSelectCommit,
   baseBranch, targetBranch, projectPath,
-  onSearch, onToggleAll, showAll, onLoadMore, isLoading = false,
+  onSearch, onToggleAll, showAll, isLoading = false,
 }: GitGraphViewerProps) {
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
   const [commitFiles, setCommitFiles] = useState<Record<string, any[]>>({});
@@ -361,20 +360,12 @@ export default function GitGraphViewer({
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/80 border-t border-slate-200">
         <span className="text-[11px] text-slate-400">
-          {processedCommits.length} commits shown
+          {processedCommits.length} commits found
           {selectedCommit && <span className="ml-2 text-blue-500 font-medium">· {selectedCommit.substring(0, 7)} selected</span>}
+          {isLoading && <span className="ml-2 flex items-center gap-1 inline-flex"><Loader2 size={10} className="animate-spin" /> Loading...</span>}
         </span>
-        <button
-          onClick={onLoadMore}
-          disabled={isLoading}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? <Loader2 size={13} className="animate-spin" /> : <History size={13} />}
-          Load More
-        </button>
       </div>
     </div>
   );

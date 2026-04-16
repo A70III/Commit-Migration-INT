@@ -31,16 +31,14 @@ export default function Home() {
   // Git State
   const [branches, setBranches] = useState<string[]>([]);
   const [baseBranch, setBaseBranch] = useState('');
-  const [targetBranch, setTargetBranch] = useState('');
+  const [targetBranch, setTargetBranch] = useState('master');
   const [commits, setCommits] = useState<any[]>([]);
   const [selectedCommit, setSelectedCommit] = useState('');
   const [newBranchName, setNewBranchName] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllBranches, setShowAllBranches] = useState(false);
-  const skipRef = useRef(0); // use ref so loadCommits always reads latest without stale closure
-  const LIMIT = 50;
-
+  
   // Operation State
   const [operateLog, setOperateLog] = useState<{stdout: string, stderr: string, exitCode: number} | null>(null);
 
@@ -87,7 +85,15 @@ export default function Home() {
       
       setBranches(data.all);
       if (!baseBranch || !data.all.includes(baseBranch)) setBaseBranch(data.current);
-      if (!targetBranch || !data.all.includes(targetBranch)) setTargetBranch(data.current);
+      
+      // Default target to master if exists, else main, else current
+      if (data.all.includes('master')) {
+        setTargetBranch('master');
+      } else if (data.all.includes('main')) {
+        setTargetBranch('main');
+      } else if (!targetBranch || !data.all.includes(targetBranch)) {
+        setTargetBranch(data.current);
+      }
       
       setStep(2);
     } catch (err: any) {
@@ -103,13 +109,11 @@ export default function Home() {
     latestParams.current = { projectPath, baseBranch, searchQuery, showAllBranches };
   });
 
-  const loadCommits = useCallback(async (isAppend = false) => {
+  const loadCommits = useCallback(async () => {
     const { projectPath, baseBranch, searchQuery, showAllBranches } = latestParams.current;
     if (!projectPath || !baseBranch) return;
     setIsRunning(true);
     setError('');
-    
-    const currentSkip = isAppend ? skipRef.current + LIMIT : 0;
     
     try {
       const res = await fetch('/api/git/log', {
@@ -118,8 +122,6 @@ export default function Home() {
         body: JSON.stringify({ 
           projectPath, 
           branch: baseBranch,
-          maxCount: LIMIT,
-          skip: currentSkip,
           search: searchQuery || undefined,
           showAll: showAllBranches
         }),
@@ -127,24 +129,13 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       
-      skipRef.current = currentSkip;
-      
-      if (isAppend) {
-        setCommits(prev => {
-          const existingHashes = new Set(prev.map((c: any) => c.hash));
-          const newCommits = (data.logs || []).filter((c: any) => !existingHashes.has(c.hash));
-          return [...prev, ...newCommits];
-        });
-      } else {
-        skipRef.current = 0;
-        setCommits(data.logs || []);
-      }
+      setCommits(data.logs || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsRunning(false);
     }
-  }, [LIMIT]);
+  }, []);
 
   useEffect(() => {
     if (step === 2 && baseBranch) {
@@ -350,7 +341,7 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <div className="mt-10 space-y-8 pb-24">
+      <div className="mt-10 px-6 max-w-4xl mx-auto space-y-8 pb-10">
 
         {/* Global Error Banner */}
         {error && (
@@ -369,13 +360,13 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row gap-3">
             <input type="text" value={projectPath} readOnly placeholder="Select a project folder..." className="input-clean flex-1 font-mono text-sm bg-slate-100 text-slate-500 cursor-not-allowed" />
-            <button onClick={browseFolder} disabled={isRunning} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 justify-center">
+            <button onClick={browseFolder} disabled={isRunning} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 justify-center shadow-sm">
                Browse Directory
             </button>
           </div>
           
           {step === 1 && (
-            <button onClick={() => analyzeProject()} disabled={isRunning || !projectPath} className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-xl transition-colors flex justify-center items-center gap-2">
+            <button onClick={() => analyzeProject()} disabled={isRunning || !projectPath} className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-xl transition-colors flex justify-center items-center gap-2 shadow-sm">
               {isRunning ? <Loader2 className="animate-spin" /> : <FolderGit2 />} Continue
             </button>
           )}
@@ -427,7 +418,6 @@ export default function Home() {
                 onSearch={setSearchQuery}
                 onToggleAll={setShowAllBranches}
                 showAll={showAllBranches}
-                onLoadMore={() => loadCommits(true)}
                 isLoading={isRunning}
               />
             ) : isRunning ? (
