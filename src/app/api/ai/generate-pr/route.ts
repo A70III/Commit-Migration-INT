@@ -14,8 +14,12 @@ export async function POST(req: NextRequest) {
       customModel
     } = await req.json();
 
-    if (!projectPath || !targetBranch || !newBranch || !provider || !apiKey) {
+    if (!projectPath || !targetBranch || !newBranch || !provider) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
+    
+    if (!apiKey && provider !== 'lmstudio') {
+      return NextResponse.json({ error: 'Missing API Key' }, { status: 400 });
     }
 
     const gitService = new GitService(projectPath);

@@ -1,6 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export type AIProvider = 'gemini' | 'openai' | 'deepseek' | 'openrouter' | 'lmstudio';
+export type AIProvider =
+  | "gemini"
+  | "openai"
+  | "deepseek"
+  | "openrouter"
+  | "lmstudio";
 
 export interface GeneratePRParams {
   provider: AIProvider;
@@ -36,70 +41,91 @@ Diff Content:
 {{diff}}
 `;
 
-export async function generatePRContent(params: GeneratePRParams): Promise<string> {
+export async function generatePRContent(
+  params: GeneratePRParams,
+): Promise<string> {
   const provider = params.provider;
-  const apiKey = (params.apiKey || '').trim();
+  const apiKey = (params.apiKey || "").trim();
   const diffContent = params.diffContent;
-  
+
   const template = params.template || defaultTemplate;
-  const prompt = template.replace('{{diff}}', diffContent);
+  const prompt = template.replace("{{diff}}", diffContent);
 
   try {
-    if (provider === 'gemini') {
+    if (provider === "gemini") {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: params.customModel || "gemini-1.5-flash" }); // or pro
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    } 
-    
+      const model = genAI.getGenerativeModel({
+        model: params.customModel || "gemini-2.5-flash",
+      }); // or pro
+
+      // Retry logic for 503 High Demand errors
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const result = await model.generateContent(prompt);
+          return result.response.text();
+        } catch (error: any) {
+          if (error?.status === 503 && retries > 1) {
+            console.warn(
+              `Gemini 503 Error. Retrying... (${retries - 1} attempts left)`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 2000)); // wait 2s
+            retries--;
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+
     // For OpenAI-compatible endpoints
-    let endpoint = '';
-    let modelName = '';
-    
+    let endpoint = "";
+    let modelName = "";
+
     switch (provider) {
-      case 'openai':
-        endpoint = 'https://api.openai.com/v1/chat/completions';
-        modelName = 'gpt-4o'; // or gpt-4o-mini
+      case "openai":
+        endpoint = "https://api.openai.com/v1/chat/completions";
+        modelName = "gpt-4o"; // or gpt-4o-mini
         break;
-      case 'deepseek':
-        endpoint = 'https://api.deepseek.com/chat/completions';
-        modelName = 'deepseek-chat';
+      case "deepseek":
+        endpoint = "https://api.deepseek.com/chat/completions";
+        modelName = "deepseek-chat";
         break;
-      case 'openrouter':
-        endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-        modelName = 'anthropic/claude-3.5-sonnet'; // Default openrouter model
+      case "openrouter":
+        endpoint = "https://openrouter.ai/api/v1/chat/completions";
+        modelName = "z-ai/glm-4.5-air:free"; // Default openrouter model
         break;
-      case 'lmstudio':
-        endpoint = 'http://localhost:1234/v1/chat/completions';
-        modelName = 'local-model'; // LM Studio ignores this anyway if 1 model is loaded
+      case "lmstudio":
+        endpoint = "http://localhost:1234/v1/chat/completions";
+        modelName = "local-model"; // LM Studio ignores this anyway if 1 model is loaded
         break;
       default:
         throw new Error("Unsupported provider");
     }
 
-    if (params.customModel && params.customModel.trim() !== '') {
-       modelName = params.customModel.trim();
+    if (params.customModel && params.customModel.trim() !== "") {
+      modelName = params.customModel.trim();
     }
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
-    
-    if (provider !== 'lmstudio') {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+
+    if (provider !== "lmstudio") {
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
-    
-    if (provider === 'openrouter') {
-      headers['HTTP-Referer'] = 'http://localhost:3000'; // For OR
-      headers['X-Title'] = 'Commit Migration Tool';
+
+    if (provider === "openrouter") {
+      headers["HTTP-Referer"] = "http://localhost:3000"; // For OR
+      headers["X-Title"] = "Commit Migration Tool";
     }
 
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify({
         model: modelName,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
       }),
     });
@@ -110,8 +136,7 @@ export async function generatePRContent(params: GeneratePRParams): Promise<strin
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || 'No completion returned';
-    
+    return data.choices?.[0]?.message?.content || "No completion returned";
   } catch (err: any) {
     console.error("AI Generation Error", err);
     throw err;
