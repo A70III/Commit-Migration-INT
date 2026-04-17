@@ -79,7 +79,7 @@ Step 1: เลือกโปรเจกต์
 ### Step 1 — เลือกโปรเจกต์
 - กด **Browse** เพื่อเปิด native folder picker (ผ่าน `/api/native/browse-folder` ที่เรียก AppleScript บน macOS)
 - หรือพิมพ์ path ตรงๆ ก็ได้
-- กด **Analyze** → ระบบจะดึง branch list จาก `/api/git/branches` และตั้งค่า base/target branch อัตโนมัติ (ถ้ามี `master` จะเลือกเป็น target, ถ้าไม่มีจะเลือก `main`)
+- กด **Continue** → ระบบจะดึง branch list จาก `/api/git/branches` และตั้งค่า base/target branch อัตโนมัติ (ถ้ามี `master` จะเลือกเป็น target, ถ้าไม่มีจะเลือก `main`)
 
 ### Step 2 — ดู Git Graph & เลือก Commit
 - แสดง **Git Graph ย้อนหลัง** ของ base branch โดย mark commit ที่ target branch ชี้อยู่ด้วยสี
@@ -107,7 +107,11 @@ Step 1: เลือกโปรเจกต์
 
 **ถ้า merge conflict:**
 - แสดง error และหยุด ไม่รัน CI
-- ผู้ใช้กด **Auto-resolve Conflict** → ระบบจะ merge target เข้า migration branch ด้วย strategy `-X ours` (migration branch ชนะทุก conflict) แล้วรัน simulation ใหม่อัตโนมัติ
+- ผู้ใช้กด **Auto-resolve (Migration Wins)** → ระบบจะ merge target เข้า migration branch ด้วย strategy `-X ours` (migration branch ชนะทุก conflict) แล้วรัน simulation ใหม่อัตโนมัติ (อ่านรายละเอียดเพิ่มเติมที่ [เอกสาร Auto-resolve Logic](docs/auto-resolve-logic.md))
+
+> ⚠️ **คำเตือนสำคัญ:** ฟีเจอร์ Auto-resolve ด้วย `-X ours` ยัง **ไม่เคยผ่านการทดสอบบน Real Scenario** ที่มีความซับซ้อนของ Codebase ระดับ Production 
+> หากพบปัญหาการใช้งาน กรุณาอ้างอิงจาก [เอกสาร Auto-resolve Logic](docs/auto-resolve-logic.md) เพื่อทำความเข้าใจการทำงานเบื้องหลัง
+> **กรุณาตรวจสอบโค้ดที่เกิด Conflict ด้วยตัวท่านเอง** หากพบปัญหาหรือความผิดปกติ เพื่อป้องกันการสูญหายของ Source Code ที่สำคัญ และ **ต้องมั่นใจเสมอว่าระบบ CI จะถูกรันสำเร็จ (Passed) หลังจากการ Merge ทุกครั้ง**
 
 ### Step 4 — AI เขียน Pull Request
 - ดึง `git diff <target>..<migration-branch>` ระหว่างสอง branch (cap ไว้ที่ ~30,000 ตัวอักษร)
