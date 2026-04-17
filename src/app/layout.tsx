@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col transition-colors duration-300" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+      <body className="min-h-full flex flex-col" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
         <ThemeProvider>
           <div className="flex-1 w-full flex flex-col">
             {children}

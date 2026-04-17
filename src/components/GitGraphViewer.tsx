@@ -159,9 +159,9 @@ export default function GitGraphViewer({
   };
 
   return (
-    <div className="border rounded-xl overflow-hidden shadow-sm transition-colors duration-300" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
+    <div className="border rounded-xl overflow-hidden shadow-sm" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b transition-colors duration-300" style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}>
         <div className="relative flex-1 max-w-xs">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted-foreground)' }} />
           <input
@@ -184,7 +184,7 @@ export default function GitGraphViewer({
       <div className="overflow-x-auto w-full">
         <div className="min-w-[800px]">
           {/* Column headers */}
-      <div className="grid text-[10px] uppercase font-bold tracking-wider border-b sticky top-0 z-10 transition-colors duration-300" 
+      <div className="grid text-[10px] uppercase font-bold tracking-wider border-b sticky top-0 z-10" 
         style={{ gridTemplateColumns: `${svgW}px 1fr auto auto`, background: 'var(--card)', color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
         <div className="px-3 py-1.5">Graph</div>
         <div className="px-2 py-1.5">Commit</div>
@@ -372,7 +372,7 @@ export default function GitGraphViewer({
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-4 py-2.5 border-t transition-colors duration-300" style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
         <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
           {processedCommits.length} commits found
           {selectedCommit && <span className="ml-2 text-blue-500 font-medium">· {selectedCommit.substring(0, 7)} selected</span>}

@@ -649,7 +649,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Navbar */}
         <nav
-          className="w-full border-b px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-40 transition-colors duration-300"
+          className="w-full border-b px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-40"
           style={{
             background: "var(--nav-bg)",
             borderColor: "var(--nav-border)",
