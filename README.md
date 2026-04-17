@@ -1,44 +1,183 @@
-# Commit Migration Tool
+# 🔀 Commit Migration Tool
 
-An interactive web-based tool designed to help you selectively migrate commits between branches, run local CI playground environments, and automatically generate descriptive Pull Requests using AI.
+เครื่องมือ Web UI สำหรับ **ย้าย state ของ Git branch** จาก commit หนึ่งไปอีก commit หนึ่ง พร้อม validate ด้วย CI และให้ AI ช่วยเขียน Pull Request แบบครบจบในหน้าเดียว
 
-## Features
-- **Git Graph Visualization**: Inspect and select commits via a VS Code-style interactive git graph.
-- **Local Sandbox**: Safely checkout, branch, and test code before doing any pushes.
-- **AI Pull Requests**: Leverages AI (Gemini, OpenAI, etc.) to evaluate local diffs and automatically write a comprehensive PR description.
-- **Zero Configuration**: Uses pure `git` commands underneath, handling multi-line commits and complex branching painlessly.
+---
 
-## Getting Started
+## ปัญหาที่แก้
 
-First, install the necessary dependencies using Bun:
+ในงานพัฒนาที่มีหลาย branch (เช่น `base` ที่อัปเดตล่าสุด กับ `master` เวอร์ชันเก่ากว่า) มักเกิดสถานการณ์ที่ต้องการ "ดึง" โค้ดจาก commit บน base ไปลงบน target โดยไม่ใช้ cherry-pick ที่เสี่ยง conflict และสลับลำดับ — เครื่องมือนี้แก้ปัญหานั้นด้วยการใช้ `git reset --hard` ตามลำดับจริงใน tree แทน
+
+---
+
+## Tech Stack
+
+| ส่วนงาน | เทคโนโลยี |
+|---|---|
+| Framework | Next.js 16 (App Router) + React 19 |
+| Runtime | Bun |
+| Styling | Tailwind CSS v4 |
+| Git Operations | `simple-git` + Node.js `child_process` |
+| AI Integration | `@google/generative-ai`, OpenAI-compatible HTTP fetch |
+| GitHub API | `@octokit/rest` |
+| State Persistence | `localStorage` (custom hook) |
+
+---
+
+## การติดตั้งและรัน
+
 ```bash
+# ติดตั้ง dependencies
 bun install
-```
 
-Then, run the development server locally:
-```bash
+# รัน dev server
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to launch the tool.
+เปิดเบราว์เซอร์ที่ `http://localhost:3000`
 
-## Prerequisites
+> **ข้อกำหนด:** โปรเจกต์ที่จะ migrate ต้องอยู่บนเครื่อง (local) และ Next.js server ต้องเข้าถึง path นั้นได้ เพราะ backend ต้องอ่าน `.git` directory โดยตรง
 
-To finalize migration and publish Pull Requests directly to GitHub, you will need a **GitHub Personal Access Token (Classic)**. 
+---
 
-### How to Generate a GitHub Token
+## การตั้งค่า (Settings)
 
-1. Go to your GitHub account settings and navigate to [Developer Settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens/new).
-2. Look for the **Generate new token** button in the top right and click **Generate new token (classic)**.
-3. In the **Note** field, give it a descriptive name (e.g., "Commit Migration Tool").
-4. Under the **Select scopes** section, check the box next to **`repo`**. This grants the token full control of private and public repositories to read source code and create pull requests.
-5. Scroll down to the bottom and click the **Generate token** button.
-6. **Important:** Copy the generated token immediately! GitHub will only show it to you once. 
+ทุก config จะถูกจำไว้ใน `localStorage` ของเบราว์เซอร์ ไม่ต้องกรอกใหม่ทุกครั้ง
 
-Once copied, paste it into the **Settings Modal** (gear icon) on the top right of the application.
+### 1. AI Provider
+เลือก provider ที่ต้องการใช้เพื่อสร้างเนื้อหา Pull Request:
 
-## Technologies Used
-- Next.js (App Router)
-- React & Tailwind CSS
-- Bun Runtime
-- native `child_process` (for Git operations)
+| Provider | Model เริ่มต้น | หมายเหตุ |
+|---|---|---|
+| **Google Gemini** | `gemini-2.5-flash` | ต้องใช้ API Key จาก Google AI Studio |
+| **OpenAI** | `gpt-4o` | ต้องใช้ API Key |
+| **DeepSeek** | `deepseek-chat` | ต้องใช้ API Key |
+| **OpenRouter** | `z-ai/glm-4.5-air:free` | รองรับ model ฟรีหลายตัว |
+| **LM Studio** | local | รันได้โดยไม่ต้อง API Key — ต้อง start LM Studio Server ที่ `localhost:1234` ก่อน |
+
+สามารถกำหนด custom model name ให้แต่ละ provider ได้ในหน้า Settings
+
+### 2. GitHub Token
+Personal Access Token ที่ต้องมี permission `repo` เพื่อใช้ push branch และสร้าง PR ผ่าน Octokit
+
+### 3. CI / Operate Command
+คำสั่งที่จะรันหลัง migrate เสร็จ เช่น `bun run test`, `nx affected:test`, `npm run lint` — ค่า default คือ `bun run test`
+
+---
+
+## Workflow ทีละขั้น
+
+```
+Step 1: เลือกโปรเจกต์
+   └─► Step 2: ดู Git Tree & เลือก Commit
+          └─► Step 3: สร้าง Branch + รัน CI
+                 └─► [Pre-Merge Simulation]
+                        └─► Step 4: AI เขียน PR
+                               └─► Step 5: Push & Open PR บน GitHub
+```
+
+### Step 1 — เลือกโปรเจกต์
+- กด **Browse** เพื่อเปิด native folder picker (ผ่าน `/api/native/browse-folder` ที่เรียก AppleScript บน macOS)
+- หรือพิมพ์ path ตรงๆ ก็ได้
+- กด **Analyze** → ระบบจะดึง branch list จาก `/api/git/branches` และตั้งค่า base/target branch อัตโนมัติ (ถ้ามี `master` จะเลือกเป็น target, ถ้าไม่มีจะเลือก `main`)
+
+### Step 2 — ดู Git Graph & เลือก Commit
+- แสดง **Git Graph ย้อนหลัง** ของ base branch โดย mark commit ที่ target branch ชี้อยู่ด้วยสี
+- Commit ที่ target branch มีอยู่แล้วจะแสดงเป็นสีเขียว (shared) ส่วนที่ยังไม่มีจะแสดงต่างออกไป
+- คลิกเลือก commit ที่ต้องการ "migrate ไปถึง" (หมายถึง branch ใหม่จะ hard reset ไปที่ commit นั้นพร้อม commit ทั้งหมดก่อนหน้า)
+- รองรับค้นหา commit ด้วย keyword
+
+### Step 3 — สร้าง Branch + รัน CI
+เมื่อกด **Run Operation** ระบบจะทำลำดับนี้ผ่าน streaming NDJSON:
+
+1. **สร้าง branch ใหม่** ชื่อรูปแบบ `migration/<short-hash>-<timestamp>` โดย checkout จาก base branch
+2. **`git reset --hard <commit-hash>`** เพื่อตั้งสถานะของ branch ให้ตรงกับ commit ที่เลือก
+3. **รันคำสั่ง CI** ที่ตั้งไว้ใน Settings พร้อม stream log กลับมาแสดงแบบ real-time
+4. บันทึกผลลัพธ์ไว้ใน Migration History (sidebar)
+
+**Resume:** ถ้า CI ล้มเหลว ผู้ใช้สามารถแก้โค้ดใน branch ที่สร้างไว้แล้ว กดคลิก record นั้นใน history → กด Run อีกครั้งเพื่อ re-run CI โดยไม่ต้องสร้าง branch ใหม่
+
+### Pre-Merge Simulation (ก่อนไป Step 4)
+ก่อนจะสร้าง PR ระบบมีขั้นตอน **Simulate Merge** เพื่อตรวจสอบล่วงหน้า:
+
+1. สร้าง sandbox branch ชื่อ `verify/sim-<timestamp>` จาก target branch
+2. Merge migration branch เข้า sandbox ด้วย `--no-ff`
+3. รัน CI command บน merged state นั้น
+4. ลบ sandbox branch ออก (cleanup เสมอ แม้เกิด error)
+
+**ถ้า merge conflict:**
+- แสดง error และหยุด ไม่รัน CI
+- ผู้ใช้กด **Auto-resolve Conflict** → ระบบจะ merge target เข้า migration branch ด้วย strategy `-X ours` (migration branch ชนะทุก conflict) แล้วรัน simulation ใหม่อัตโนมัติ
+
+### Step 4 — AI เขียน Pull Request
+- ดึง `git diff <target>..<migration-branch>` ระหว่างสอง branch (cap ไว้ที่ ~30,000 ตัวอักษร)
+- ส่ง diff ไปให้ AI provider ที่เลือกพร้อม prompt template
+- AI สร้าง PR description เป็น **Markdown ภาษาไทย** (ผสมศัพท์เทคนิคภาษาอังกฤษได้)
+- ผู้ใช้แก้ไข title และ body ได้โดยตรงก่อน submit
+- Gemini มี retry logic สำหรับ 503 High Demand error (retry 3 ครั้ง, รอ 2 วินาที)
+
+### Step 5 — Push & Open PR
+1. **Push** migration branch ขึ้น `origin` ด้วย `-u`
+2. **Parse** repo owner/name จาก remote URL (รองรับทั้ง HTTPS และ SSH format)
+3. **เปิด PR** บน GitHub ผ่าน Octokit API พร้อม title, body ที่ AI สร้าง
+4. **Assign Reviewers** ด้วย GitHub username ที่ใส่ไว้ (คั่นด้วย comma)
+5. แสดงลิงก์ PR ที่สร้างสำเร็จ
+
+---
+
+## โครงสร้างโปรเจกต์
+
+```
+src/
+├── app/
+│   ├── page.tsx              # UI หลักทั้งหมด (Single Page App) + state management
+│   ├── layout.tsx            # Root layout + ThemeProvider
+│   └── api/
+│       ├── native/
+│       │   └── browse-folder/  # Native OS folder picker (AppleScript on macOS)
+│       ├── git/
+│       │   ├── branches/       # ดึง branch list
+│       │   ├── log/            # ดึง commit history + เช็ค shared hashes กับ target
+│       │   ├── commit-details/ # ดึงรายการไฟล์ที่เปลี่ยนแปลงใน commit
+│       │   ├── operate/        # สร้าง/checkout branch, reset, รัน CI (streaming)
+│       │   ├── simulate-merge/ # Sandbox merge + รัน CI บน merged state (streaming)
+│       │   ├── absorb-target/  # Force-merge target เข้า migration (-X ours) (streaming)
+│       │   └── push-pr/        # Push branch + เปิด PR บน GitHub
+│       └── ai/
+│           └── generate-pr/    # สร้าง PR content ด้วย AI
+├── components/
+│   ├── GitGraphViewer.tsx    # Visualize commit history แบบ tree
+│   └── MigrationSidebar.tsx  # แสดง migration history
+└── lib/
+    ├── git-service.ts        # ห่อ simple-git + child_process spawn
+    ├── ai-service.ts         # จัดการ AI providers ทุกตัว
+    ├── use-local-storage.ts  # Hook สำหรับ persist state ไว้ใน localStorage
+    └── use-theme.tsx         # Dark/Light mode toggle
+```
+
+---
+
+## API Routes สรุป
+
+| Method | Path | ทำอะไร |
+|---|---|---|
+| `GET` | `/api/native/browse-folder` | เปิด native OS folder picker |
+| `POST` | `/api/git/branches` | ดึง branch list ของโปรเจกต์ |
+| `POST` | `/api/git/log` | ดึง commit log และ mark shared commits กับ target branch |
+| `POST` | `/api/git/commit-details` | ดึง file list ที่เปลี่ยนใน commit นั้น |
+| `POST` | `/api/git/operate` | สร้าง/resume migration branch + รัน CI (NDJSON stream) |
+| `POST` | `/api/git/simulate-merge` | จำลอง merge + รัน CI บน sandbox (NDJSON stream) |
+| `POST` | `/api/git/absorb-target` | Force-merge target เข้า migration (-X ours) (NDJSON stream) |
+| `POST` | `/api/git/push-pr` | Push branch + สร้าง PR + assign reviewers |
+| `POST` | `/api/ai/generate-pr` | สร้างเนื้อหา PR ด้วย AI จาก git diff |
+
+Routes ที่ return **NDJSON stream** จะส่ง JSON object ทีละบรรทัดผ่าน `ReadableStream` และ frontend จะอ่านด้วย `reader.read()` loop พร้อม buffer handling เพื่อรับ log แบบ real-time
+
+---
+
+## หมายเหตุสำคัญ
+
+- **ต้องรันบนเครื่องที่มีโปรเจกต์:** เครื่องมือนี้ไม่ใช่ remote tool — Next.js server ต้อง access file system ของโปรเจกต์ได้โดยตรง
+- **Git state จะถูกแก้ไขจริง:** `git reset --hard` และ branch operations ทำกับ repository จริง ควรตรวจสอบ branch ก่อนรัน
+- **GitHub Token:** ใช้เฉพาะ push และ PR — ไม่มีการส่งไปเก็บที่ server ใดๆ ทั้งสิ้น (ส่งตรงจาก browser ผ่าน Next.js API route ไป GitHub)
+- **AI Prompt:** template เริ่มต้นจะสั่งให้ AI เขียนเป็นภาษาไทยผสมศัพท์เทคนิคภาษาอังกฤษ สามารถปรับ template ได้ในอนาคต
