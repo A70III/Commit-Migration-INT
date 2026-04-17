@@ -159,21 +159,22 @@ export default function GitGraphViewer({
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+    <div className="border rounded-xl overflow-hidden shadow-sm transition-colors duration-300" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50/80 border-b border-slate-200">
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b transition-colors duration-300" style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}>
         <div className="relative flex-1 max-w-xs">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted-foreground)' }} />
           <input
             type="text"
             placeholder="Search commits..."
             value={searchValue}
             onChange={e => handleSearchChange(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+            className="w-full pl-8 pr-3 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+            style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }}
           />
         </div>
         {/* All Branches checkbox removed */}
-        <div className="h-4 w-[1px] bg-slate-200" />
+        <div className="h-4 w-[1px]" style={{ background: 'var(--border)' }} />
         <button onClick={() => onSearch(searchValue)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold">
           <Filter size={13} /> Filter
         </button>
@@ -183,8 +184,8 @@ export default function GitGraphViewer({
       <div className="overflow-x-auto w-full">
         <div className="min-w-[800px]">
           {/* Column headers */}
-      <div className="grid text-[10px] uppercase font-bold tracking-wider text-slate-400 border-b border-slate-100 bg-white sticky top-0 z-10" 
-        style={{ gridTemplateColumns: `${svgW}px 1fr auto auto` }}>
+      <div className="grid text-[10px] uppercase font-bold tracking-wider border-b sticky top-0 z-10 transition-colors duration-300" 
+        style={{ gridTemplateColumns: `${svgW}px 1fr auto auto`, background: 'var(--card)', color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
         <div className="px-3 py-1.5">Graph</div>
         <div className="px-2 py-1.5">Commit</div>
         <div className="px-3 py-1.5 text-center w-32">Author</div>
@@ -206,9 +207,16 @@ export default function GitGraphViewer({
                   onSelectCommit(c.hash);
                   setExpandedCommit(isExpanded ? null : c.hash);
                 }}
-                className={`grid group cursor-pointer border-b border-slate-50 transition-colors select-none
-                  ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50/80'}`}
-                style={{ gridTemplateColumns: `${svgW}px 1fr auto auto`, minHeight: CELL_H }}
+                className={`grid group cursor-pointer border-b transition-colors select-none relative
+                  ${isSelected ? 'border-l-2 border-l-blue-500' : ''}`}
+                style={{ 
+                  gridTemplateColumns: `${svgW}px 1fr auto auto`, 
+                  minHeight: CELL_H, 
+                  borderColor: 'var(--border)',
+                  background: isSelected ? 'var(--muted)' : 'transparent'
+                }}
+                onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--muted)'; }}
+                onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
               >
                 {/* Graph SVG */}
                 <div className="relative" style={{ width: svgW, minHeight: CELL_H }}>
@@ -254,7 +262,8 @@ export default function GitGraphViewer({
                 {/* Message + refs */}
                 <div className="flex items-center gap-2 px-2 py-0.5 min-w-0">
                   <span className={`w-4 h-4 shrink-0 flex items-center justify-center rounded transition-colors
-                    ${isSelected ? 'text-blue-500' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                    ${isSelected ? 'text-blue-500' : 'group-hover:text-current'}`}
+                    style={{ color: isSelected ? undefined : 'var(--muted-foreground)' }}>
                     {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   </span>
                   {targetHashes.has(c.hash) && (
@@ -263,47 +272,48 @@ export default function GitGraphViewer({
                     </span>
                   )}
                   <span className="font-mono text-[11px] text-blue-500 shrink-0">{c.hash.substring(0, 7)}</span>
-                  <span className="text-xs text-slate-700 truncate font-medium">{c.message}</span>
+                  <span className="text-xs truncate font-medium" style={{ color: 'var(--foreground)' }}>{c.message}</span>
                   <span className="flex items-center shrink-0">{renderRefs(c.refs)}</span>
                 </div>
 
                 {/* Author */}
                 <div className="flex items-center gap-1.5 px-3 w-32">
-                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold uppercase shrink-0"
+                    style={{ background: 'var(--card-border)', color: 'var(--foreground)' }}>
                     {c.author_name?.charAt(0) || '?'}
                   </div>
-                  <span className="text-[11px] text-slate-500 truncate max-w-[60px]">{c.author_name}</span>
+                  <span className="text-[11px] truncate max-w-[60px]" style={{ color: 'var(--secondary-text)' }}>{c.author_name}</span>
                 </div>
 
                 {/* Date */}
                 <div className="flex items-center justify-end pr-4 w-28">
-                  <span className="text-[11px] text-slate-400 whitespace-nowrap">{c.relativeDate || ''}</span>
+                  <span className="text-[11px] whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>{c.relativeDate || ''}</span>
                 </div>
               </div>
 
               {/* Expanded detail panel */}
               {isExpanded && (
-                <div className="border-b border-slate-100 bg-slate-50/60">
+                <div className="border-b transition-colors" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
                   <div className="flex flex-col lg:flex-row gap-4 p-4">
                     {/* Commit meta */}
                     <div className="flex-1 space-y-3 min-w-0">
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold uppercase shrink-0">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold uppercase shrink-0" style={{ background: 'var(--card-border)', color: 'var(--foreground)' }}>
                           {c.author_name?.charAt(0)}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-sm text-slate-800">{c.author_name}</p>
-                          <p className="text-[11px] text-slate-500">{c.author_email}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{new Date(c.date).toLocaleString()}</p>
+                          <p className="font-bold text-sm" style={{ color: 'var(--foreground)' }}>{c.author_name}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--secondary-text)' }}>{c.author_email}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{new Date(c.date).toLocaleString()}</p>
                         </div>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-lg p-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Full Hash</p>
+                      <div className="border rounded-lg p-3" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                        <p className="text-[10px] font-bold uppercase mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Full Hash</p>
                         <code className="text-[11px] text-blue-600 break-all select-all">{c.hash}</code>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-lg p-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Message</p>
-                        <p className="text-xs text-slate-700">{c.message}</p>
+                      <div className="border rounded-lg p-3" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                        <p className="text-[10px] font-bold uppercase mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Message</p>
+                        <p className="text-xs" style={{ color: 'var(--foreground)' }}>{c.message}</p>
                       </div>
                       <div className="flex justify-end">
                         <button
@@ -316,27 +326,30 @@ export default function GitGraphViewer({
                     </div>
 
                     {/* Files changed */}
-                    <div className="lg:w-72 xl:w-96 bg-white rounded-lg border border-slate-200 flex flex-col max-h-56">
-                      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/50">
-                        <FileCode size={13} className="text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    <div className="lg:w-72 xl:w-96 rounded-lg border flex flex-col max-h-56 transition-colors" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                      <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+                        <FileCode size={13} style={{ color: 'var(--muted-foreground)' }} />
+                        <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--muted-foreground)' }}>
                           Files Changed {commitFiles[c.hash] !== undefined ? `(${commitFiles[c.hash]?.length ?? 0})` : ''}
                         </span>
                       </div>
                       <div className="overflow-y-auto flex-1 p-1.5">
                         {isFetchingFiles && commitFiles[c.hash] === undefined ? (
-                          <div className="flex items-center justify-center h-12 gap-2 text-slate-400 text-xs">
+                          <div className="flex items-center justify-center h-12 gap-2 text-xs" style={{ color: 'var(--muted-foreground)' }}>
                             <Loader2 size={13} className="animate-spin" /> Loading...
                           </div>
                         ) : (commitFiles[c.hash] || []).length === 0 ? (
-                          <p className="text-xs text-slate-400 text-center py-4">No files found</p>
+                          <p className="text-xs text-center py-4" style={{ color: 'var(--muted-foreground)' }}>No files found</p>
                         ) : (
                           (commitFiles[c.hash] || []).map((f: any, i: number) => (
-                            <div key={i} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-50 text-xs">
+                            <div key={i} className="flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors"
+                              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--muted)'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ''; }}
+                            >
                               <span className={`w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center shrink-0 ${fileStatusColor(f.status)}`}>
                                 {f.status}
                               </span>
-                              <span className="font-mono text-slate-600 truncate" title={f.path}>{f.path}</span>
+                              <span className="font-mono truncate" style={{ color: 'var(--secondary-text)' }} title={f.path}>{f.path}</span>
                             </div>
                           ))
                         )}
@@ -350,7 +363,7 @@ export default function GitGraphViewer({
         })}
 
         {processedCommits.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ color: 'var(--muted-foreground)' }}>
             <GitCommit size={32} className="opacity-30" />
             <p className="text-sm">No commits found</p>
           </div>
@@ -359,8 +372,8 @@ export default function GitGraphViewer({
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/80 border-t border-slate-200">
-        <span className="text-[11px] text-slate-400">
+      <div className="flex items-center justify-between px-4 py-2.5 border-t transition-colors duration-300" style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
+        <span className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
           {processedCommits.length} commits found
           {selectedCommit && <span className="ml-2 text-blue-500 font-medium">· {selectedCommit.substring(0, 7)} selected</span>}
           {isLoading && <span className="ml-2 flex items-center gap-1 inline-flex"><Loader2 size={10} className="animate-spin" /> Loading...</span>}

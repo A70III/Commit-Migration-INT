@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from '@/lib/use-local-storage';
+import { useTheme } from '@/lib/use-theme';
 import { 
   FolderGit2, Settings, GitBranch, ArrowRight, 
   Terminal, Sparkles, Send, CheckCircle2, AlertCircle,
-  Loader2, ExternalLink, X, FolderSearch, Copy
+  Loader2, ExternalLink, X, FolderSearch, Copy, Moon, Sun
 } from 'lucide-react';
 import GitGraphViewer from '@/components/GitGraphViewer';
 import MigrationSidebar from '@/components/MigrationSidebar';
 
 export default function Home() {
+  const { theme, toggleTheme, isDark } = useTheme();
   // Config State
   const [projectPath, setProjectPath] = useLocalStorage('commitManager_projectPath', '');
   const [aiProvider, setAiProvider] = useLocalStorage('commitManager_aiProvider', 'gemini');
@@ -378,14 +380,14 @@ export default function Home() {
   // --- Render --- //
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
         <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 overflow-hidden">
+    <div className="flex h-screen font-sans selection:bg-blue-100 overflow-hidden" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
       
       {/* Sidebar */}
       <aside className="w-80 shrink-0 hidden lg:block">
@@ -399,31 +401,62 @@ export default function Home() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Navbar */}
-        <nav className="w-full bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-40">
+        <nav className="w-full border-b px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-40 transition-colors duration-300" style={{ background: 'var(--nav-bg)', borderColor: 'var(--nav-border)' }}>
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
               <GitBranch size={20} />
             </div>
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight">Workspace Migration</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--card-foreground)' }}>Workspace Migration</h1>
           </div>
           
-          <button onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-            <Settings size={18} /> Settings
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <span className={`absolute transition-all duration-300 ${
+                isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'
+              }`}>
+                <Sun size={18} className="text-amber-400" />
+              </span>
+              <span className={`absolute transition-all duration-300 ${
+                isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'
+              }`}>
+                <Moon size={18} />
+              </span>
+            </button>
+
+            <button onClick={() => setShowSettings(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              style={{ color: 'var(--secondary-text)' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--muted)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--foreground)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = '';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--secondary-text)';
+              }}
+            >
+              <Settings size={18} /> Settings
+            </button>
+          </div>
         </nav>
 
         {/* Settings Modal - fullscreen overlay, must be outside <main> */}
         {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 className="font-bold text-lg flex items-center gap-2"><Settings size={18}/> App Settings</h3>
-                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600 p-1"><X size={20}/></button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm animate-fade-in" style={{ background: 'var(--overlay-bg)' }}>
+            <div className="rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transition-colors" style={{ background: 'var(--card)', border: '1px solid var(--card-border)' }}>
+              <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
+                <h3 className="font-bold text-lg flex items-center gap-2" style={{ color: 'var(--card-foreground)' }}><Settings size={18}/> App Settings</h3>
+                <button onClick={() => setShowSettings(false)} className="p-1 transition-colors" style={{ color: 'var(--secondary-text)' }}><X size={20}/></button>
               </div>
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">AI Provider</label>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>AI Provider</label>
                   <select value={aiProvider} onChange={e => setAiProvider(e.target.value)} className="input-clean font-medium">
                     <option value="gemini">Google Gemini</option>
                     <option value="openai">OpenAI</option>
@@ -433,7 +466,7 @@ export default function Home() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">{aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1)} API Key</label>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>{aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1)} API Key</label>
                   <input 
                     type="password" 
                     value={apiKeys[aiProvider] || ''} 
@@ -444,7 +477,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">AI Model Name</label>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>AI Model Name</label>
                   <input 
                     type="text" 
                     value={aiModels[aiProvider] !== undefined ? aiModels[aiProvider] : defaultModels[aiProvider]} 
@@ -452,36 +485,36 @@ export default function Home() {
                     className="input-clean font-mono text-sm" 
                     placeholder={`e.g. ${defaultModels[aiProvider]}`} 
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Default: {defaultModels[aiProvider]}</p>
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--muted-foreground)' }}>Default: {defaultModels[aiProvider]}</p>
                 </div>
                 <div className="pt-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">GitHub Personal Access Token</label>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>GitHub Personal Access Token</label>
                   <input type="password" value={githubToken} onChange={e => setGithubToken(e.target.value)} className="input-clean font-mono text-sm" placeholder="ghp_..." />
-                  <div className="text-xs text-slate-500 mt-2 space-y-1 bg-slate-100 p-3 rounded-lg border border-slate-200">
-                    <p className="font-semibold text-slate-700 mb-1">How to generate a token:</p>
+                  <div className="text-xs mt-2 space-y-1 p-3 rounded-lg" style={{ background: 'var(--muted)', border: '1px solid var(--border)', color: 'var(--secondary-text)' }}>
+                    <p className="font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>How to generate a token:</p>
                     <ol className="list-decimal list-inside space-y-0.5 ml-1">
-                      <li>Go to <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">GitHub Developer Settings</a></li>
+                      <li>Go to <a href="https://github.com/settings/tokens/new" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">GitHub Developer Settings</a></li>
                       <li>Add a Note (e.g. "Commit Migration Tool")</li>
                       <li>Select the <strong>`repo`</strong> scope</li>
                       <li>Click <strong>Generate token</strong> at the bottom</li>
                     </ol>
-                    <p className="text-orange-600 mt-1.5 flex items-center gap-1"><AlertCircle size={12}/> Copy the token — you won't see it again.</p>
+                    <p className="text-orange-500 mt-1.5 flex items-center gap-1"><AlertCircle size={12}/> Copy the token — you won't see it again.</p>
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <div className="px-6 py-4 border-t flex justify-end" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
                 <button onClick={() => setShowSettings(false)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">Save & Close</button>
               </div>
             </div>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--background)' }}>
           <div className="max-w-4xl mx-auto space-y-8 pb-20">
 
         {/* Global Error Banner */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg flex items-start gap-3 shadow-sm animate-fade-in">
+          <div className="border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3 shadow-sm animate-fade-in" style={{ background: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2', color: isDark ? '#fca5a5' : '#b91c1c' }}>
             <AlertCircle className="mt-0.5 shrink-0" size={18} />
             <span className="font-medium">{error}</span>
           </div>
@@ -490,14 +523,13 @@ export default function Home() {
         {/* STEP 1: Select Project */}
         <section className={`clean-panel p-6 sm:p-8 transition-opacity duration-300 ${step !== 1 && 'opacity-50'}`}>
           <div className="flex items-center gap-3 mb-6">
-
             <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><FolderSearch size={22}/></div>
-            <h2 className="text-xl font-bold">1. Select Project</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--card-foreground)' }}>1. Select Project</h2>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            <input type="text" value={projectPath} readOnly placeholder="Select a project folder..." className="input-clean flex-1 font-mono text-sm bg-slate-100 text-slate-500 cursor-not-allowed" />
-            <button onClick={browseFolder} disabled={isRunning} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 justify-center shadow-sm">
+            <input type="text" value={projectPath} readOnly placeholder="Select a project folder..." className="input-clean flex-1 font-mono text-sm cursor-not-allowed opacity-60" />
+            <button onClick={browseFolder} disabled={isRunning} className="px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 justify-center shadow-sm" style={{ background: 'var(--card-foreground)', color: 'var(--card)' }}>
                Browse Directory
             </button>
           </div>
@@ -517,22 +549,22 @@ export default function Home() {
                 {/* Branch selectors row */}
                 <div className="flex items-center gap-3 mb-5">
                   <div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg"><GitBranch size={20}/></div>
-                  <h2 className="text-xl font-bold">2. Map Commits</h2>
-                  {isRunning && commits.length > 0 && <Loader2 size={16} className="animate-spin text-slate-400 ml-auto" />}
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--card-foreground)' }}>2. Map Commits</h2>
+                  {isRunning && commits.length > 0 && <Loader2 size={16} className="animate-spin ml-auto" style={{ color: 'var(--muted-foreground)' }} />}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Base Branch (Source)</label>
-                    <select value={baseBranch} onChange={e => setBaseBranch(e.target.value)} className="input-clean font-medium shadow-sm bg-white text-sm">
+                  <div className="p-4 rounded-xl" style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Base Branch (Source)</label>
+                    <select value={baseBranch} onChange={e => setBaseBranch(e.target.value)} className="input-clean font-medium shadow-sm text-sm">
                       {branches.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 border border-slate-200 shadow-sm z-10 hidden md:block">
-                    <ArrowRight className="text-slate-400" size={16} />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 shadow-sm z-10 hidden md:block" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                    <ArrowRight style={{ color: 'var(--muted-foreground)' }} size={16} />
                   </div>
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Target Branch (Destination)</label>
-                    <select value={targetBranch} onChange={e => setTargetBranch(e.target.value)} className="input-clean font-medium shadow-sm bg-white text-sm">
+                  <div className="p-4 rounded-xl" style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted-foreground)' }}>Target Branch (Destination)</label>
+                    <select value={targetBranch} onChange={e => setTargetBranch(e.target.value)} className="input-clean font-medium shadow-sm text-sm">
                       {branches.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
@@ -565,7 +597,7 @@ export default function Home() {
 
             {step === 2 && (
               <div className="flex justify-end">
-                <button onClick={branchAndReset} disabled={!selectedCommit} className="bg-slate-800 hover:bg-slate-700 disabled:bg-slate-300 text-white font-medium px-8 py-3 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                <button onClick={branchAndReset} disabled={!selectedCommit} className="disabled:opacity-40 text-white font-medium px-8 py-3 rounded-lg transition-colors flex items-center gap-2 shadow-sm" style={{ background: 'var(--card-foreground)', color: 'var(--card)' }}>
                   Confirm Selection <ArrowRight size={18} />
                 </button>
               </div>
@@ -576,12 +608,12 @@ export default function Home() {
 
         {/* STEP 3: Playground / Local CI */}
         {step >= 3 && (
-          <section className={`clean-panel p-6 sm:p-8 animate-slide-up shadow-lg border-blue-100 shadow-blue-500/5 ${step !== 3 && 'opacity-50'}`}>
+          <section className={`clean-panel p-6 sm:p-8 animate-slide-up shadow-lg shadow-blue-500/5 ${step !== 3 && 'opacity-50'}`}>
              <div className="flex gap-4 items-start mb-6">
                <div className="bg-orange-100 text-orange-600 p-2 rounded-lg shrink-0"><Terminal size={22}/></div>
                <div>
-                 <h2 className="text-xl font-bold">3. Checkout & Playground</h2>
-                 <p className="text-slate-500 text-sm mt-1">
+                 <h2 className="text-xl font-bold" style={{ color: 'var(--card-foreground)' }}>3. Checkout &amp; Playground</h2>
+                 <p className="text-sm mt-1" style={{ color: 'var(--secondary-text)' }}>
                    {resumingRecordId 
                      ? `Fix code locally on branch "${newBranchName}" and retry validation.` 
                      : 'Create branch and run CI validations locally.'}
@@ -589,12 +621,12 @@ export default function Home() {
                </div>
              </div>
 
-             <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6 space-y-4">
+             <div className="p-5 rounded-xl mb-6 space-y-4" style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}>
                 <div>
-                   <label className="block text-sm font-semibold text-slate-700 mb-2">Local Command (e.g. tests, linters)</label>
+                   <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--card-foreground)' }}>Local Command (e.g. tests, linters)</label>
                    <div className="flex flex-col sm:flex-row gap-3">
                      <input type="text" value={ciCommand} onChange={e => setCiCommand(e.target.value)}
-                       className="input-clean font-mono flex-1 bg-white" placeholder="bun run test" />
+                       className="input-clean font-mono flex-1" placeholder="bun run test" />
                      {step === 3 && (
                        <button onClick={runOperation} disabled={isRunning} className="bg-orange-600 hover:bg-orange-500 disabled:bg-orange-300 text-white px-6 py-3 rounded-lg font-medium whitespace-nowrap flex items-center gap-2 justify-center shadow-sm">
                          {isRunning ? <Loader2 className="animate-spin" /> : <Terminal size={18} />} 
@@ -606,8 +638,8 @@ export default function Home() {
              </div>
 
              {operateLog && (
-               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                  <div className="bg-slate-800 text-slate-200 p-3 text-xs font-mono border-b border-slate-700 flex justify-between items-center">
+               <div className="rounded-xl overflow-hidden shadow-sm" style={{ border: '1px solid var(--border)' }}>
+                  <div className="bg-slate-900 text-slate-200 p-3 text-xs font-mono border-b border-slate-700 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <span>Console Output</span>
                       <button 
@@ -624,10 +656,10 @@ export default function Home() {
                       Exit Code: {operateLog.exitCode}
                     </span>
                   </div>
-                  <div ref={terminalRef} className="bg-slate-900 p-4 font-mono text-xs max-h-[300px] overflow-y-auto whitespace-pre-wrap">
+                  <div ref={terminalRef} className="bg-slate-950 p-4 font-mono text-xs max-h-[300px] overflow-y-auto whitespace-pre-wrap">
                     {operateLog.stdout && <span className="text-slate-300">{operateLog.stdout}</span>}
                     {operateLog.stderr && <span className="text-red-400 mt-2 block">{operateLog.stderr}</span>}
-                    {!operateLog.stdout && !operateLog.stderr && <span className="text-slate-500 italic">No output</span>}
+                    {!operateLog.stdout && !operateLog.stderr && <span className="text-slate-600 italic">No output</span>}
                   </div>
                </div>
              )}
@@ -644,18 +676,18 @@ export default function Home() {
 
         {/* STEP 4: AI Generate PR */}
         {step >= 4 && (
-          <section className={`clean-panel p-6 sm:p-8 animate-slide-up shadow-lg border-purple-100 shadow-purple-500/5 ${step !== 4 && 'opacity-50'}`}>
+          <section className={`clean-panel p-6 sm:p-8 animate-slide-up shadow-lg shadow-purple-500/5 ${step !== 4 && 'opacity-50'}`}>
             <div className="flex items-center justify-between mb-6">
                <div className="flex items-center gap-3">
                  <div className="bg-purple-100 text-purple-600 p-2 rounded-lg"><Sparkles size={22}/></div>
-                 <h2 className="text-xl font-bold">4. AI Review Generator</h2>
+                 <h2 className="text-xl font-bold" style={{ color: 'var(--card-foreground)' }}>4. AI Review Generator</h2>
                </div>
             </div>
 
             {step === 4 && !prContent ? (
-              <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                 <Sparkles className="mx-auto text-slate-300 mb-4" size={40} />
-                 <p className="text-slate-500 mb-6">Let {aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1)} analyze the diff and write your PR.</p>
+              <div className="text-center py-10 rounded-xl border-2 border-dashed" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+                 <Sparkles className="mx-auto mb-4" style={{ color: 'var(--muted-foreground)' }} size={40} />
+                 <p className="mb-6" style={{ color: 'var(--secondary-text)' }}>Let {aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1)} analyze the diff and write your PR.</p>
                  <button onClick={generatePR} disabled={isRunning}
                     className="bg-purple-600 hover:bg-purple-500 disabled:bg-purple-300 text-white px-8 py-3 rounded-xl font-bold shadow-md shadow-purple-500/20 flex items-center gap-2 mx-auto justify-center transition-transform hover:scale-105 active:scale-95">
                     {isRunning ? <Loader2 className="animate-spin" /> : <Sparkles />} Generate Magic PR
@@ -664,16 +696,16 @@ export default function Home() {
             ) : (
                 <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Pull Request Title</label>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>Pull Request Title</label>
                   <input type="text" value={prTitle} onChange={e => setPrTitle(e.target.value)} className="input-clean font-medium text-lg" />
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-semibold text-slate-700">AI Generated Description</label>
+                      <label className="block text-sm font-semibold" style={{ color: 'var(--card-foreground)' }}>AI Generated Description</label>
                       <button onClick={generatePR} disabled={isRunning}
-                        className="text-purple-600 hover:text-purple-700 text-xs font-bold flex items-center gap-1 transition-colors disabled:text-slate-400">
+                        className="text-purple-500 hover:text-purple-400 text-xs font-bold flex items-center gap-1 transition-colors disabled:opacity-40">
                         {isRunning ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Regenerate
                       </button>
                     </div>
@@ -681,21 +713,21 @@ export default function Home() {
                       className="input-clean font-mono text-sm leading-relaxed" />
                   </div>
                   <div>
-                     <label className="block text-sm font-semibold text-slate-700 mb-1 text-slate-400">Diff Preview (Read-only)</label>
+                     <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--muted-foreground)' }}>Diff Preview (Read-only)</label>
                      <textarea readOnly value={diffContent} rows={14}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-400 font-mono text-xs focus:outline-none" />
+                      className="input-clean font-mono text-xs opacity-60 cursor-default" />
                   </div>
                 </div>
   
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Reviewers (Comma separated GitHub Usernames)</label>
-                  <input type="text" value={reviewers} onChange={e => setReviewers(e.target.value)} className="input-clean bg-white" placeholder="user_a, user_b" />
+                  <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--card-foreground)' }}>Reviewers (Comma separated GitHub Usernames)</label>
+                  <input type="text" value={reviewers} onChange={e => setReviewers(e.target.value)} className="input-clean" placeholder="user_a, user_b" />
                 </div>
   
                 {step === 4 && (
                    <div className="pt-4 flex justify-end">
                      <button onClick={pushAndPR} disabled={isRunning}
-                       className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold px-10 py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center gap-2 text-lg">
+                       className="disabled:opacity-50 text-white font-bold px-10 py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center gap-2 text-lg" style={{ background: 'var(--card-foreground)' }}>
                        {isRunning ? <Loader2 className="animate-spin" /> : <Send size={22}/>} Publish to GitHub
                      </button>
                    </div>
@@ -707,12 +739,12 @@ export default function Home() {
 
         {/* STEP 5: Done */}
         {step === 5 && (
-          <section className="clean-panel p-10 text-center animate-slide-up border-emerald-200 border-2 shadow-emerald-500/10">
+          <section className="clean-panel p-10 text-center animate-slide-up border-emerald-500/30 border-2 shadow-emerald-500/10">
               <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={32} />
               </div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-3">Shipment Successful!</h2>
-              <p className="text-slate-500 mb-8 max-w-sm mx-auto">Your code has branch has been created, mapped, tested, and a Pull Request was opened via AI evaluation.</p>
+              <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--card-foreground)' }}>Shipment Successful!</h2>
+              <p className="mb-8 max-w-sm mx-auto" style={{ color: 'var(--secondary-text)' }}>Your code has branch has been created, mapped, tested, and a Pull Request was opened via AI evaluation.</p>
               
               <div className="flex items-center justify-center gap-4">
                 <a href={prUrl} target="_blank" rel="noreferrer"
@@ -720,7 +752,7 @@ export default function Home() {
                   <ExternalLink size={18} /> View on GitHub
                 </a>
                 <button onClick={() => { setStep(1); setPrContent(''); setOperateLog(null); setSelectedCommit(''); }} 
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-lg font-semibold transition-colors">
+                  className="px-6 py-3 rounded-lg font-semibold transition-colors" style={{ background: 'var(--muted)', color: 'var(--foreground)' }}>
                   Start New Journey
                 </button>
               </div>

@@ -24,17 +24,69 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Light Mode (default) ───────────────────────────────────────────── */
 @layer base {
   :root {
-    --background: #ffffff;
+    --background: #f8fafc;
     --foreground: #334155;
+
     --card: #ffffff;
     --card-foreground: #1e293b;
+    --card-border: #e2e8f0;
+
+    --nav-bg: #ffffff;
+    --nav-border: #e2e8f0;
+
     --border: #e2e8f0;
     --secondary-text: #64748b;
+
+    --input-bg: #f8fafc;
+    --input-border: #e2e8f0;
+    --input-text: #475569;
+    --input-focus-ring: #3b82f6;
+
+    --muted: #f1f5f9;
+    --muted-foreground: #94a3b8;
+
+    --overlay-bg: rgba(15, 23, 42, 0.4);
+
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-thumb-hover: #94a3b8;
   }
 }
 
+/* ── Dark Mode ──────────────────────────────────────────────────────── */
+@layer base {
+  [data-theme="dark"] {
+    --background: #0f172a;
+    --foreground: #e2e8f0;
+
+    --card: #1e293b;
+    --card-foreground: #f1f5f9;
+    --card-border: #334155;
+
+    --nav-bg: #1e293b;
+    --nav-border: #334155;
+
+    --border: #334155;
+    --secondary-text: #94a3b8;
+
+    --input-bg: #0f172a;
+    --input-border: #334155;
+    --input-text: #cbd5e1;
+    --input-focus-ring: #3b82f6;
+
+    --muted: #1e293b;
+    --muted-foreground: #64748b;
+
+    --overlay-bg: rgba(0, 0, 0, 0.6);
+
+    --scrollbar-thumb: #334155;
+    --scrollbar-thumb-hover: #475569;
+  }
+}
+
+/* ── Base Styles ────────────────────────────────────────────────────── */
 @layer base {
   * {
     border-color: var(--border);
@@ -54,19 +106,41 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #475569;
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+    background: var(--scrollbar-thumb-hover);
   }
 }
 
+/* ── Utility Classes ────────────────────────────────────────────────── */
 @layer utilities {
   .clean-panel {
-    @apply bg-white border border-slate-200 shadow-sm rounded-2xl;
+    background-color: var(--card);
+    border: 1px solid var(--card-border);
+    @apply shadow-sm rounded-2xl;
   }
   .input-clean {
-    @apply w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all;
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    @apply rounded-lg p-3 focus:outline-none transition-all;
+  }
+  .input-clean:focus {
+    border-color: var(--input-focus-ring);
+    box-shadow: 0 0 0 1px var(--input-focus-ring);
+  }
+
+  /* Theme toggle button */
+  .theme-toggle {
+    @apply relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200;
+    background-color: var(--muted);
+    color: var(--secondary-text);
+  }
+  .theme-toggle:hover {
+    background-color: var(--card-border);
+    color: var(--foreground);
   }
 }
